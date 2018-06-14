@@ -1,0 +1,25 @@
+If you plan to modify the regex, please have a look here:
+
+--------------------------------------------
+Regex Test Sites
+--------------------------------------------
+https://regex101.com
+http://www.regexplanet.com/advanced/java/index.html
+
+--------------------------------------------
+Identified Problematic Characters
+--------------------------------------------
+https://unicode-table.com/en/#control-character
+https://apps.timwhitlock.info/emoji/tables/unicode
+
+--------------------------------------------
+What is the character that you have problem with
+--------------------------------------------
+http://apps.timwhitlock.info/unicode/inspect
+http://www.utf8-chartable.de/unicode-utf8-table.pl
+
+
+--------------------------------------------
+Regex Intro
+--------------------------------------------
+http://www.rexegg.com/regex-quickstart.html

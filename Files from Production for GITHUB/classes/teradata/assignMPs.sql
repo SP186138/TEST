@@ -1,0 +1,116 @@
+DROP TABLE "@CoreDatabase".DR_MP_ASSIGN;
+
+
+LOCK TABLE "@CoreDatabase".CM_STEP_RESPONSE FOR ACCESS
+LOCK TABLE "@CoreDatabase".CM_COMMUNICATION_COMM_PLAN FOR ACCESS
+LOCK TABLE "@LeadDatabase".LH_CURRENT_LEAD FOR ACCESS
+LOCK TABLE "@CoreDatabase".EX_COMMUNICATION FOR ACCESS
+LOCK TABLE "@CoreDatabase".EX_MKTNG_PGM FOR ACCESS
+LOCK TABLE "@CoreDatabase".CR_GROUP_USER FOR ACCESS
+LOCK TABLE "@CoreDatabase".CR_GROUP FOR ACCESS
+LOCK TABLE "@CoreDatabase".CM_COMMUNICATION_EVENT FOR ACCESS
+CREATE TABLE "@CoreDatabase".DR_MP_ASSIGN
+AS
+(
+SELECT 
+    DISTINCT *
+FROM
+(
+SELECT DISTINCT
+	EXMP.Group_Id
+    ,EXMP.MKTNG_PGM_NBR
+    ,U.User_Id
+FROM	
+	"@CoreDatabase".CM_STEP_RESPONSE SR
+JOIN	
+	"@CoreDatabase".CM_COMMUNICATION_COMM_PLAN CCP
+ON 		SR.Comm_Plan_Id = CCP.Comm_Plan_Id
+JOIN 
+	"@LeadDatabase".LH_CURRENT_LEAD  LCL
+ON		CCP.Communication_Id = LCL.Communication_Id 
+AND		SR.Comm_Plan_Id = LCL.Comm_Plan_Id
+AND		SR.Step_Id = LCL.Step_Id
+AND		SR.Message_Id = LCL.Message_Id
+JOIN
+	TRM_VIEWS_DB.REGIS_PRSNA RP
+ON
+	LCL.Regis_Prsna_Id = RP.Regis_Prsna_Id
+JOIN
+	"@CoreDatabase".EX_MKTNG_PGM EXMP
+ON
+	RP.MKTNG_PGM_NBR=EXMP.MKTNG_PGM_NBR
+JOIN
+	"@CoreDatabase".CR_GROUP_USER GU
+ON 
+	EXMP.Group_Id = GU.Group_Id
+JOIN 
+	"@CoreDatabase".CR_USER U
+ON
+	U.user_name = 'trm_batch_usr'
+WHERE 	
+	Segment_Id IS NOT NULL 
+    
+UNION 
+
+SELECT DISTINCT
+	EXMP.Group_Id
+    ,EXMP.MKTNG_PGM_NBR
+    ,U.User_Id
+FROM	
+	"@CoreDatabase".CM_COMMUNICATION_EVENT CE
+JOIN
+	"@LeadDatabase".LH_CURRENT_LEAD LCL
+ON
+	CE.Communication_Id = LCL.Communication_Id
+JOIN
+	TRM_VIEWS_DB.REGIS_PRSNA RP
+ON
+	LCL.Regis_Prsna_Id = RP.Regis_Prsna_Id
+JOIN
+	"@CoreDatabase".EX_MKTNG_PGM EXMP
+ON
+	RP.MKTNG_PGM_NBR=EXMP.MKTNG_PGM_NBR
+JOIN
+	"@CoreDatabase".CR_GROUP_USER GU
+ON 
+	EXMP.Group_Id = GU.Group_Id
+JOIN 
+	"@CoreDatabase".CR_USER U
+ON
+	U.user_name = 'trm_batch_usr'
+WHERE 	
+	Segment_Id IS NOT NULL 
+) T1
+) WITH DATA PRIMARY INDEX ( User_Id )
+;
+.IF ERRORCODE != 0 THEN .GOTO ERROR_END;
+
+BEGIN TRANSACTION;
+
+DELETE FROM "@CoreDatabase".CR_GROUP_USER
+WHERE
+    User_Id IN
+    (SELECT User_Id FROM "@CoreDatabase".DR_MP_ASSIGN)
+;
+.IF ERRORCODE != 0 THEN .GOTO ERROR_END;
+
+INSERT INTO "@CoreDatabase".CR_GROUP_USER
+(Group_Id
+,User_Id
+,Display_Ord
+)
+SELECT
+    Group_Id
+    ,User_Id
+    ,1 AS Display_Ord
+FROM
+    "@CoreDatabase".DR_MP_ASSIGN
+;
+.IF ERRORCODE != 0 THEN .GOTO ERROR_END;
+
+END TRANSACTION;
+
+.QUIT 0;
+
+.LABEL ERROR_END;
+.QUIT ERRORCODE;
